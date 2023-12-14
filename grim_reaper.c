@@ -178,7 +178,7 @@ void options(int argc, char *argv[], char **url, uint16_t *port, int32_t *n_sock
 	}
 }
 
-char *extract_domain(char *url)
+char *extract_domain(char *url, int *memory_leak_safe)
 {
 	const char *pattern = "https?://([^/]+).*";
 	regex_t regex;
@@ -195,9 +195,10 @@ char *extract_domain(char *url)
 	}
 
 	size_t match_length = matches[1].rm_eo - matches[1].rm_so;
-	char* result = (char*)malloc(match_length + 1);
+	char *result = (char*)malloc(match_length + 1);
 
 	if (!result) {
+		free(result);
 		regfree(&regex);
 		return url;
 	}
@@ -205,6 +206,7 @@ char *extract_domain(char *url)
 	snprintf(result, match_length + 1, "%.*s", (int) match_length,
 			url + matches[1].rm_so);
 	regfree(&regex);
+	*memory_leak_safe = 1;
 
 	return result;
 }
@@ -213,21 +215,18 @@ int main(int argc, char *argv[])
 {
 	signal(SIGINT, sigint_handler);
 
+	int memory_leak_safe = 0;
 	int32_t n_sockets = 32, launch = 1, t_sleep = 5;
 	uint16_t port = 80;
 	char *url = NULL, ip_str[INET_ADDRSTRLEN] = { 0 };
 	struct sockaddr_in target;
 
 	memset(&target, 0, sizeof(struct sockaddr_in));
-
 	options(argc, argv, &url, &port, &n_sockets, &t_sleep);
-
-	url = extract_domain(url);
-
+	url = extract_domain(url, &memory_leak_safe);
 	target.sin_family = AF_INET;
 	target.sin_port = htons(port);
 	get_address(url, &target);
-
 	inet_ntop(AF_INET, (void *) &target.sin_addr.s_addr, ip_str,
 			sizeof(ip_str));
 
@@ -276,6 +275,8 @@ int main(int argc, char *argv[])
 		sleep(t_sleep);
 	}
 
+	if (memory_leak_safe)
+		free(url);
 	free(sockets);
 
 	return EXIT_SUCCESS;
