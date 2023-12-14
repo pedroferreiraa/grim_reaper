@@ -12,6 +12,7 @@ This project is a simple C program designed for educational purposes only. It si
 - [Usage](#usage)
 - [Defense Mechanisms](#defense-mechanisms)
 - [Contributing](#contributing)
+- [To do](#to-do)
 
 ## How it Works
 
@@ -59,3 +60,6 @@ To defend against slowloris attacks, consider implementing the following measure
 ## Contributing
 
 Contributions to improve the educational value, documentation, or security considerations of this project are welcome. Please open an issue or submit a pull request with your suggestions.
+
+## To do
+1. Make more than 1024 connections using fork().
